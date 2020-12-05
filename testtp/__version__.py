@@ -1,0 +1,10 @@
+__title__ = 'testtp'
+__description__ = 'Python HTTP for Testers.'
+__url__ = ''
+__version__ = '0.0.1'
+__build__ = 0x022500
+__author__ = 'Be5yond'
+__author_email__ = 'beyond147896@126.com'
+__license__ = 'Apache 2.0'
+__copyright__ = 'Copyright 2020 Be5yond'
+__cake__ = u'\u2728 \U0001f370 \u2728'
