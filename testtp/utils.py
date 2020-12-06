@@ -39,7 +39,7 @@ def render(p: dict, cache: dict)->dict:
 
 
 
-class DefaultData:
+class defaultdata:
     def __init__(self, **kwargs):
         self.temp = kwargs
 
