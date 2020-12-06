@@ -1,15 +1,15 @@
-from testtp import Req
+from testtp import Session
 
 def test_stash():
     url = 'http://httpbin.org/get'
-    s = Req.Session()
+    s = Session()
     s.get(url)
     s.stash('headers.Host', 'Host')
     assert s.cache['Host'] == 'httpbin.org'
 
 def test_render():
     url = 'http://httpbin.org/{pa}'
-    s = Req.Session()
+    s = Session()
     s.cache = {'pa': 'post', 'para': '1000', 'dodo': '2000'}
     data = {'replace': '{{ dodo}}'}
     params = {'replace': '{{ para }}'}
