@@ -98,7 +98,7 @@ http://httpbin.org/post
         "X-Api-Header": "default-API"    #API-默认参数
     },
     "json": {
-        "default-body-data": "some_api",  
+        "default-body-data": "some_api",  # API默认参数
         "real": "hadogen"                 # 本次请求参数
     },
     "origin": "61.149.134.32",
@@ -124,20 +124,26 @@ s.post('http://httpbin.org/post', json=body)
 ```
 ### 上下文数据缓存---stash
 Session将最近一次请求的response存储。使用stash函数可以从response数据抽取关键的数据，存储到cache，供后面请求使用,
-[json_query](https://jmespath.org/)提取规则为jmespath规则
+json_query提取规则为[jmespath](https://jmespath.org/)规则
 ```
 s = Session()
 s.cache = {'token_holder': 'real_token'}
 body={'data': 'testdata', 'token': '{{ token_holder }}'}
 s.post('http://httpbin.org/post', json=body)
 s.stash(json_query='headers.Host', key='host') # 将返回的content中 'header.Host'字段存到缓存cache中，key为'host'
+print(self.cache)
+
+>>> OUTPUT
+{"token_holder": "real_token", "host": "httpbin.org"}
+
 body={'context_vars': '{{ host }}'}
 s.post('http://httpbin.org/post', json=body)
+
 >>> OUTPUT
 2020-12-06 22:07:41.644 | SEND xx   | testtp.Req:_wrapper:35 - <= request body => 
 {
     "context_vars": "httpbin.org"
-xx
+}
 ```
 ### 使用函数实时计算参数---register_render
 “{% f(x) %}"字符串括起来的数据f(x)被认为是函数，运行时将执行函数来生成数据。   
@@ -202,7 +208,7 @@ http://httpbin.org/get
 'str'>, 'url': <function test_validate_response_custom_function.<locals>.is_url at 0x000001B478983280>}
 ```
 ### 数据抽取---json_query
-有些场景下需要对返回数据进行一些预处理（如：抽取关键字段，求和，求最大值等），之后才进行校验，这时需要传入数据处理规则[json_query](https://jmespath.org/),提取规则为jmespath规则
+有些场景下需要对返回数据进行一些预处理（如：抽取关键字段，求和，求最大值等），之后才进行校验，这时需要传入数据处理规则json_query,提取规则为[jmespath](https://jmespath.org/)规则
 ```
 data = {
     'data_list': [
