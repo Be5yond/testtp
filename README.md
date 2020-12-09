@@ -20,6 +20,10 @@ http client for testers
 - [schema](https://github.com/keleshev/schema)
 - [loguru](https://github.com/Delgan/loguru)
 
+## Installation
+```
+python -m pip install testtp
+```
 ## 默认参数
 - - -
 ### Session级默认参数
