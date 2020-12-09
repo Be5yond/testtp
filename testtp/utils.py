@@ -1,5 +1,6 @@
 import re
 from copy import copy
+import operator
 from .logger import logger
 
 
@@ -44,10 +45,53 @@ class defaultdata:
         self.temp = kwargs
 
     def __call__(self, func):
-        def wrap(*args, **kwargs):
+        def _wrapper(*args, **kwargs):
             for k, v in self.temp.items():
                 temp = copy(v)
                 temp.update(kwargs.get(k, {}))
                 kwargs[k] = temp
             return func(*args, **kwargs)
-        return wrap
+        return _wrapper
+
+
+def le(n: float):
+    """ assertsion function to validate target value less or equal than n
+    """
+    def wrapper(x):
+        return operator.le(x, n)
+    return wrapper
+
+
+def lt(n: float):
+    """ assertsion function to validate target value less than n
+    """
+    def wrapper(x):
+        return operator.lt(x, n)
+    return wrapper
+
+
+def ge(n: float):
+    """ assertsion function to validate target value greater or equal than n
+    """
+    def wrapper(x):
+        return operator.ge(x, n)
+    return wrapper
+
+
+def gt(n: float):
+    """ assertsion function to validate target value greater or equal than n
+    """
+    def wrapper(x):
+        return operator.ge(x, n)        
+    return wrapper
+
+
+def match(regex: str):
+    """ assertion function to validata target string match the reg pattenn
+
+    Args:
+        regex (str): regular expression pattern
+    """
+    def wrapper(s):
+        return bool(re.search(regex, s))
+    return wrapper
