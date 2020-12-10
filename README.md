@@ -26,9 +26,9 @@ python -m pip install testtp
 ```
 ## 默认参数
 - - -
-### Session级默认参数
+### Session级默认参数   
 Session继承自requests.Session.利用requests.Session实现默认数据。
-``` 
+```python
 from testtp import Session
 s = Session()
 s.headers['X-request-type'] = 'autotest'
@@ -59,7 +59,7 @@ http://httpbin.org/get?default_params=value&custom=query
 ```
 ### API级别默认参数
 使用defaultdata装饰器实现添加接口默认参数
-```
+```python
 class Client(Session):
     def __init__(self, host):
         self.host = host
@@ -109,12 +109,14 @@ http://httpbin.org/post
     "url": "http://httpbin.org/post"
 }
 ```
-## 数据动态渲染
+## 数据动态渲染   
+使用预定义的规则标识数据中的变量，执行时会将testdata对应位置的值做替换
+> **用字符串规则来标识函数和变量，使得测试数据为json格式，方便数据的存储于外部文件或数据库*
 - - -
 ### 变量缓存---cache
 “{{ x }}"字符串括起来的数据x被认为是变量，运行时将替换成cache中的对应数据。   
 
-```
+```python
 s = Session()
 s.cache = {'token_holder': 'real_token'}  # 设置缓存数据
 body={'data': 'testdata', 'token': '{{ token_holder }}'}
@@ -129,7 +131,7 @@ s.post('http://httpbin.org/post', json=body)
 ### 上下文数据缓存---stash
 Session将最近一次请求的response存储。使用stash函数可以从response数据抽取关键的数据，存储到cache，供后面请求使用,
 json_query提取规则为[jmespath](https://jmespath.org/)规则
-```
+```python
 s = Session()
 s.cache = {'token_holder': 'real_token'}
 body={'data': 'testdata', 'token': '{{ token_holder }}'}
@@ -152,7 +154,7 @@ s.post('http://httpbin.org/post', json=body)
 ### 使用函数实时计算参数---register_render
 “{% f(x) %}"字符串括起来的数据f(x)被认为是函数，运行时将执行函数来生成数据。   
 支持python内置函数例如random.randint()， 也可以用register_render将自定义函数注册给渲染器使用。 
-```
+```python
 def get_timestamp(shift: int):
         return int(time.time()) + shift
 s = Session()
@@ -167,12 +169,13 @@ s.post('http://httpbin.org/post', json=body)
     "timestamp": 1607265492  # 实际参数为get_timestamp函数返回的当前时间戳
 }
 ```
+
 ## 数据校验
 - - -
 ### 校验返回body---validate
 validate方法对response进行格式校验， scm与请求数据一样会经过render处理，支持变量和函数规则同"{{ x }}", "{% f %}".    
 > **注意[schema](https://github.com/keleshev/schema)中的函数只传函数名，执行时会将response对应位置的值作为参数调用f，函数f的返回，应是一个bool值。*
-```
+```python
 def is_url(s):
     return s.startswith('http')
 s = Session()
@@ -213,7 +216,7 @@ http://httpbin.org/get
 ```
 ### 数据抽取---json_query
 有些场景下需要对返回数据进行一些预处理（如：抽取关键字段，求和，求最大值等），之后才进行校验，这时需要传入数据处理规则json_query,提取规则为[jmespath](https://jmespath.org/)规则
-```
+```python
 data = {
     'data_list': [
         {'type': 'A', 'count': 80},
