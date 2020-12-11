@@ -7,7 +7,8 @@ import requests
 from schema import Schema, SchemaError
 
 from .logger import logger
-from . import utils
+from .utils import merge
+from . import render
 
 
 class Session(requests.Session):
@@ -28,7 +29,7 @@ class Session(requests.Session):
         @wraps(method)
         def _wrapper(ins, url, **kwargs):
             url = url.format(**ins.cache)
-            kwargs = {k: utils.render(v, ins.cache) for k, v in kwargs.items()}
+            kwargs = {k: render.render(v, ins.cache) for k, v in kwargs.items()}
             # logger.log('SEND', '<= request url => \n{}'.format(url))
             logger.log('SEND', '<= request params => \n{}'.format(jsonlib.dumps(kwargs.get('params', {}), indent=4, ensure_ascii=False)))
             body = kwargs.get('json') or kwargs.get('data', {})
@@ -74,18 +75,24 @@ class Session(requests.Session):
             logger.debug('<= extract body => \n{}'.format(schema))
         else:
             data = self.response.json()
-        schema = utils.render(schema, self.cache)
+        schema = render.render(schema, self.cache)
         scm = Schema(schema, ignore_extra_keys=True)
+
         try:
             scm.validate(data)
-            logger.debug('<= schema template => \n{}'.format(schema))
         except SchemaError as e:
-            logger.error('<= schema template => \n{}'.format(schema))
             logger.error('<= err msg => \n{}'.format(e))
             pytest.fail(msg=str(e), pytrace=False)
+        finally:
+            scm_log = merge(data, schema)
+            scm_log = jsonlib.dumps(scm_log, indent=4, ensure_ascii=False)
+            logger.debug('<= schema template => \n{}'.format(scm_log))
+
 
     def register_render(self, *args):
         """ 将函数注册到Session，供渲染时使用
         """
         for f in args:
-            utils.__setattr__(f.__name__, f)
+            render.__setattr__(f.__name__, f)
+
+

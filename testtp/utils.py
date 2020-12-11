@@ -1,47 +1,8 @@
-import re
-from copy import copy
-import operator
-from .logger import logger
-
-
-def render(p: dict, cache: dict)->dict:
-    """ 渲染数据替换变量和函数
-
-    Args:
-        p (dict): 待渲染的数据模板
-        cache (dict): 数据变量
-
-    Returns:
-        dict: 替换后的文件
-    """
-    var_matcher = re.compile('^{{\s*([0-9A-Za-z_]+)\s*}}$')
-    func_matcher = re.compile('^{%\s*([0-9a-zA-Z()"_.=-]+)\s*%}$')
-    if isinstance(p, str) and re.match(var_matcher, p):
-        try:
-            para = p.strip('{ }')
-            return cache.get(para, p)
-        except KeyError as e:
-            logger.error(e)
-            logger.error(cache)
-    if isinstance(p, str) and re.match(func_matcher, p):
-        try:
-            para = p.strip('[{%} ]')
-            return eval(para)
-        except Exception as e:
-            logger.error(e)
-    elif isinstance(p, dict):
-        for k, v in p.items():
-
-            p[k] = render(v, cache)
-    elif isinstance(p, list):
-        for i, v in enumerate(p):
-            p[i] = render(v, cache)
-    return p
-
+import types
 
 
 class defaultdata:
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.temp = kwargs
 
     def __call__(self, func):
@@ -54,44 +15,41 @@ class defaultdata:
         return _wrapper
 
 
-def le(n: float):
-    """ assertsion function to validate target value less or equal than n
-    """
-    def wrapper(x):
-        return operator.le(x, n)
-    return wrapper
-
-
-def lt(n: float):
-    """ assertsion function to validate target value less than n
-    """
-    def wrapper(x):
-        return operator.lt(x, n)
-    return wrapper
-
-
-def ge(n: float):
-    """ assertsion function to validate target value greater or equal than n
-    """
-    def wrapper(x):
-        return operator.ge(x, n)
-    return wrapper
-
-
-def gt(n: float):
-    """ assertsion function to validate target value greater or equal than n
-    """
-    def wrapper(x):
-        return operator.ge(x, n)        
-    return wrapper
-
-
-def match(regex: str):
-    """ assertion function to validata target string match the reg pattenn
+def merge(data, schema):
+    """ 将data和schema merge成一个dict，展示对应字段的校验规则，及失败信息。
 
     Args:
-        regex (str): regular expression pattern
+        data (dict): 被校验数据
+        schema (dict): 校验规则模板
     """
-    def wrapper(s):
-        return bool(re.search(regex, s))
-    return wrapper
+    if data is None:
+        return f'>  Not Exist !  <'
+
+    # 校验数据类型,或者函数校验时，展示schema名称，缩写展示target_value
+    if isinstance(schema, (type, types.FunctionType, types.MethodType)):
+        schema_name = schema.__name__
+        if isinstance(data, list):
+            data = '[...]'
+        elif isinstance(data, dict):
+            data = '{...}'
+        elif isinstance(data, str):
+            data = f'{data[:3]}...'
+        return f'<  {data}  > == <  {schema_name}  >'
+    # 校验target 为空数组或者空字典时
+    elif schema in ([], {}):
+        return f'<  {data}  > == <  {schema}  >'
+    # 校验数据target 等于schema时
+    elif isinstance(data, (int, float, str)):
+        return f'<  {data}  > == <  {schema}  >'
+
+    # 嵌套数据递归调用
+    elif isinstance(data, dict):
+        for k, v in schema.items():
+            # key在schema中存在，data中不存在时，将data置为None 调用merge
+            data[k] = merge(data.get(k), v)
+    elif isinstance(data, list):
+        for idx, v in enumerate(data):
+            # 遍历列表数据，将schema应用到每一个
+            data[idx] = merge(v, schema[0])
+    return data
+    
