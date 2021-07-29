@@ -1,4 +1,4 @@
-from functools import wraps
+from functools import wraps, partialmethod
 import json as jsonlib
 from json.decoder import JSONDecodeError
 import jmespath
@@ -25,33 +25,26 @@ class Session(requests.Session):
         except JSONDecodeError as e:
             logger.log('RECV', '<= response data => \n{}'.format(r.content))
     
-    def _prepare(method):
-        @wraps(method)
-        def _wrapper(ins, url, **kwargs):
+    def _prepare(func):
+        @wraps(func)
+        def _wrapper(ins, method, url, **kwargs):
             url = url.format(**ins.cache)
             kwargs = {k: render.render(v, ins.cache) for k, v in kwargs.items()}
             # logger.log('SEND', '<= request url => \n{}'.format(url))
-            logger.log('SEND', '<= request params => \n{}'.format(jsonlib.dumps(kwargs.get('params', {}), indent=4, ensure_ascii=False)))
             body = kwargs.get('json') or kwargs.get('data', {})
+            logger.log('SEND', '<= request params => \n{}'.format(jsonlib.dumps(kwargs.get('params', {}), indent=4, ensure_ascii=False)))
             logger.log('SEND', '<= request body => \n{}'.format(jsonlib.dumps(body, indent=4, ensure_ascii=False)))
-            return method(ins, url, **kwargs)
+            return func(ins, method, url, **kwargs)
         return _wrapper
+        
+    @_prepare
+    def request(self, method, url, **kwargs):
+        return super().request(method, url, **kwargs, hooks={'response': self._restore_resp})
 
-    @_prepare
-    def get(self, url, **kwargs):
-        return super().get(url, **kwargs, hooks={'response': self._restore_resp})
-    
-    @_prepare
-    def post(self, url, **kwargs):
-        return super().post(url, **kwargs, hooks={'response': self._restore_resp})
-
-    @_prepare
-    def put(self, url, **kwargs):
-        return super().put(url, **kwargs, hooks={'response': self._restore_resp})
-
-    @_prepare
-    def delete(self, url, **kwargs):
-        return super().delete(url, **kwargs, hooks={'response': self._restore_resp})
+    get = partialmethod(request, 'GET')
+    post = partialmethod(request, 'POST')
+    put = partialmethod(request, 'PUT')
+    delete = partialmethod(request, 'DELETE')
 
     def stash(self, json_query: str, key: str):
         """ 通过json_query取出数据并，缓存数据到cache
@@ -87,7 +80,6 @@ class Session(requests.Session):
             scm_log = merge(data, schema)
             scm_log = jsonlib.dumps(scm_log, indent=4, ensure_ascii=False)
             logger.debug('<= schema template => \n{}'.format(scm_log))
-
 
     def register_render(self, *args):
         """ 将函数注册到Session，供渲染时使用
