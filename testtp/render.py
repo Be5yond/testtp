@@ -15,7 +15,7 @@ def render(p: dict, cache: dict)->dict:
         dict: 替换后的文件
     """
     var_matcher = re.compile('^{{\s*([0-9A-Za-z_]+)\s*}}$')
-    func_matcher = re.compile('^{%\s*([0-9a-zA-Z()"_.=-]+)\s*%}$')
+    func_matcher = re.compile('^{%\s*([0-9a-zA-Z()", _.=-]+)\s*%}$')
     if isinstance(p, str) and re.match(var_matcher, p):
         try:
             para = p.strip('{ }')

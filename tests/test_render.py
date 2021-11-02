@@ -18,3 +18,14 @@ def test_render_func():
     body={'data': 'testdata', 'token': '{% get_timestamp() %}'}
     s.post('http://httpbin.org/post', json=body)
 
+def test_render_func_with_args():
+    def deco_func(a, b):
+        def func(x):
+            return a < x < b
+        return func
+    s = Session()
+    s.register_render(deco_func)
+    body={'data': 'testdata', 'token': 3}
+    s.post('http://httpbin.org/post', json=body)
+    scm = {'json': {'token': "{% deco_func(1, 5) %}"}}
+    s.validate(schema=scm)
