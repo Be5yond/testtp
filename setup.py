@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="UTF-8") as fh:
 
 setuptools.setup(
     name="testtp", 
-    version="0.0.1",
+    version="0.0.3",
     author="Be5yond",
     author_email="beyond147896@126.com",
     description="Http client for testers",
