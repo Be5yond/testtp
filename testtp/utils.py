@@ -1,7 +1,53 @@
 import types
+from copy import copy
+from itertools import zip_longest
+from dataclasses import dataclass, field
+from typing import Any
 
+
+@dataclass
+class Data(dict):
+    params: dict = field(default_factory=dict)
+    data: dict = field(default_factory=dict)
+    json: dict = field(default_factory=dict)
+    headers: dict = field(default_factory=dict)
+    cookies: dict = field(default_factory=dict)
+
+    def __iter__(self):
+        return iter([{'params': self.params}, self.data, self.json, self.headers, self.cookies])
+
+    def __dict__(self):
+        return {
+            'params': self.params,
+            'data': self.data,
+            'json': self.json,
+            'headers': self.headers,
+            'cookies': self.cookies
+        }
+
+
+@dataclass
+class Step:
+    data: Data
+    extract: str
+    schema: Any
+
+
+def step(func):
+    def _warpper(ins, step):
+        ret = func(ins, **step.data)
+        ins.validate(json_query=step.extract, schema=step.schema)
+        return ret
+    return _warpper
 
 class defaultdata:
+    """默认数据装饰器，为方法添加默认参数.支持的参数为requests的参数headers，params，json, data等
+    使用方法：
+        @defaultdata(headers={"X-API-header": "default-API"},
+                     json={"api-body": "some_api"})
+        def some_api(self, **kwargs):
+            ...
+    """
     def __init__(self, *args, **kwargs):
         self.temp = kwargs
 
@@ -48,8 +94,8 @@ def merge(data, schema):
             # key在schema中存在，data中不存在时，将data置为None 调用merge
             data[k] = merge(data.get(k), v)
     elif isinstance(data, list):
-        for idx, v in enumerate(data):
-            # 遍历列表数据，将schema应用到每一个
-            data[idx] = merge(v, schema[0])
+        for index, (item, scm) in enumerate(zip_longest(data, schema, fillvalue=schema[-1])):
+            # 遍历列表数据，将每一个数据与对应的scm模板合并
+            data[index] = merge(item, scm)
     return data
     
